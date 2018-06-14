@@ -7,7 +7,8 @@
 
 #ifndef GlobalContext2_h
 #define GlobalContext2_h
-#include "ofMain.h"
+#include <type_traits>
+#include "ofEventUtils.h"
 
 namespace aaa{
     namespace deteil{
@@ -27,29 +28,29 @@ namespace aaa{
         template<class T> using has_update_op = decltype(std::declval<T>().update());
         template<class T> using has_update = is_detected<has_update_op, T>;
 
-        struct place_holder{
+        struct wrapper_bass{
             virtual void call_setup() = 0;
             virtual void call_update() = 0;
         };
         
         template<typename T>
-        struct any_type : place_holder{
-            any_type(){}
-            ~any_type(){}
-            void call_setup(){ setup_functor(); }
-            void call_update(){ update_functor(); }
-            void update_listner_func(ofEventArgs &args){ update_functor(); }
+        struct listner_wrapper : wrapper_bass{
+            listner_wrapper(){}
+            ~listner_wrapper(){}
+            void call_setup(){ setup(); }
+            void call_update(){ update(); }
+            void update_listner_func(ofEventArgs &args){ update(); }
             T t;
         private:
-            template <typename U = T> auto setup_functor() -> typename std::enable_if<has_setup<U>::value, void>::type{ t.setup(); }
-            template <typename U = T> auto setup_functor() -> typename std::enable_if<!has_setup<U>::value, void>::type{}
-            template <typename U = T> auto update_functor() -> typename std::enable_if<has_update<U>::value, void>::type{ t.update(); }
-            template <typename U = T> auto update_functor() -> typename std::enable_if<!has_update<U>::value, void>::type{}
+            template <typename U = T> auto setup() -> typename std::enable_if<has_setup<U>::value, void>::type{ t.setup(); }
+            template <typename U = T> auto setup() -> typename std::enable_if<!has_setup<U>::value, void>::type{}
+            template <typename U = T> auto update() -> typename std::enable_if<has_update<U>::value, void>::type{ t.update(); }
+            template <typename U = T> auto update() -> typename std::enable_if<!has_update<U>::value, void>::type{}
         };
         
         template<typename T>
         struct singletoner{
-            static  any_type<T>& get_ref(){ static any_type<T> t_a;  return t_a; }
+            static  listner_wrapper<T>& get_ref(){ static listner_wrapper<T> t_a;  return t_a; }
             static void call_setup(){ get_ref().call_setup(); }
             static void call_update(){ get_ref().call_update(); }
             template<typename E>
@@ -60,17 +61,17 @@ namespace aaa{
             singletoner(){}
             ~singletoner(){}
             template <typename E, typename U = T> static auto add_listner_impl(ofEvent<E>& event) -> typename std::enable_if<has_update<U>::value, void>::type{
-                ofAddListener(event, &(get_ref()), &any_type<T>::update_listner_func);
+                ofAddListener(event, &(get_ref()), &listner_wrapper<T>::update_listner_func);
             }
             template <typename E, typename U = T> static auto add_listner_impl(ofEvent<E>& event) -> typename std::enable_if<!has_update<U>::value, void>::type{}
             
             template <typename E, typename U = T> static auto remove_listner_impl(ofEvent<E>& event) -> typename std::enable_if<has_update<U>::value, void>::type{
-                ofRemoveListener(event, &(get_ref()), &any_type<T>::update_listner_func);
+                ofRemoveListener(event, &(get_ref()), &listner_wrapper<T>::update_listner_func);
             }
             template <typename E, typename U = T> static auto remove_listner_impl(ofEvent<E>& event) -> typename std::enable_if<!has_update<U>::value, void>::type{}
         };
         
-        struct accesser{
+        struct accessor{
             template<typename T>
             static void setup(){
                 singletoner<T>::call_setup();
@@ -101,6 +102,6 @@ namespace aaa{
 };
 
 
-typedef aaa::deteil::accesser context;
+typedef aaa::deteil::accessor context;
 
 #endif /* GlobalContext2_h */
