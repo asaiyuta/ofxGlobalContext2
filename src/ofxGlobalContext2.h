@@ -109,7 +109,9 @@ namespace aaa{
             template <typename U = T>
             static auto setup()
             -> typename std::enable_if<!detail::has_setup<U>::value, void>::type
-            {}
+            {
+                get();
+            }
             
             template <typename U = T>
             static auto update()
