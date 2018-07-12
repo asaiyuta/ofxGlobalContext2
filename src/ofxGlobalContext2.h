@@ -77,11 +77,8 @@ namespace aaa{
         };
         
         struct wrapper_base{
-            template<typename T>
-            wrapper_base(T& t){
-                context_map()[detail::utils::rtti::get_name(t)] = this;
-            }
-            ~wrapper_base(){}
+            wrapper_base(){}
+            virtual ~wrapper_base(){}
             virtual void call_setup() = 0;
             virtual void call_update() = 0;
             static std::map<std::string, wrapper_base*>& context_map(){
@@ -137,7 +134,6 @@ namespace aaa{
             }
             
             context_wrapper()
-            : wrapper_base(t)
             {
                 init_extension();
                 add_update();
@@ -330,10 +326,6 @@ namespace aaa{
             template<typename T>
             static T& get(){
                 return context_wrapper<T>::get();
-            }
-            
-            static std::map<std::string, wrapper_base*>& getContextMap(){
-                return wrapper_base::context_map();
             }
         };
     };
